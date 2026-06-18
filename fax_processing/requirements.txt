@@ -1,0 +1,29 @@
+# Core dependencies
+fastapi==0.115.14
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.6
+pydantic-settings==2.7.1
+
+# OCR & Image processing
+paddleocr>=2.7.0
+paddlepaddle>=2.6.0
+pymupdf==1.26.7
+pillow==11.3.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+
+# Document processing
+pypdf==5.1.0
+
+# AI/ML
+transformers==4.36.2
+torch==2.1.2
+openai==1.3.0
+python-dotenv==1.0.0
+sentencepiece==0.1.99
+Pillow==11.3.0
+
+# Utilities
+python-dateutil==2.9.0
+rich==13.9.4

@@ -1,0 +1,47 @@
+# Python virtual environments (huge — not needed in container)
+ocr/
+venv/
+.venv/
+env/
+
+# Duplicate project folder
+PAOCR-PROJECT/
+
+# Node modules
+services/frontend/node_modules/
+services/frontend/dist/
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Storage data (processed files, results)
+storage/jobs/
+storage/ocr_results/
+storage/pages/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage

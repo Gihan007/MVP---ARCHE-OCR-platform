@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR-ArcheAI - Human Review</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .review-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .document-viewer {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .document-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .document-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .field-overlay {
+            position: absolute;
+            border: 2px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            pointer-events: none;
+            transition: all 0.2s;
+        }
+
+        .field-overlay:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .field-overlay.selected {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.2);
+        }
+
+        .fields-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 2rem;
+        }
+
+        .panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .panel-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .fields-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .field-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s;
+        }
+
+        .field-item:hover {
+            background: #f9fafb;
+        }
+
+        .field-item.selected {
+            background: #eff6ff;
+            border-left: 4px solid #2563eb;
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .field-confidence {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence-high { background: #dcfce7; color: #166534; }
+        .confidence-medium { background: #fef3c7; color: #92400e; }
+        .confidence-low { background: #fee2e2; color: #991b1b; }
+
+        .field-value {
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: #f9fafb;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-word;
+        }
+
+        .field-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+        .btn-outline:hover { background: #f9fafb; }
+
+        .field-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .field-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .page-navigation {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .page-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .submit-section {
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .submit-section button {
+            width: 100%;
+        }
+
+        .status-message {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .evidence-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #f9fafb;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>OCR-ArcheAI - Human Review Interface</h1>
+        <div id="job-info">Loading job data...</div>
+    </div>
+
+    <div class="container">
+        <div id="status-message"></div>
+
+        <div class="review-layout">
+            <div class="document-viewer">
+                <div class="document-header">
+                    <div class="page-navigation" id="page-navigation"></div>
+                </div>
+                <div class="image-container">
+                    <img id="document-image" src="" alt="Document page" class="document-image">
+                </div>
+            </div>
+
+            <div class="fields-panel">
+                <div class="panel-header">
+                    <h2>Fields to Review</h2>
+                </div>
+
+                <div class="fields-list" id="fields-list">
+                    <!-- Fields will be populated here -->
+                </div>
+
+                <div class="submit-section">
+                    <button id="submit-review" class="btn btn-primary">
+                        Submit Review
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+        let currentPage = 0;
+        let reviewData = null;
+        let fieldOverlays = [];
+
+        // Job ID is injected by the backend
+        if (!currentJobId) {
+            showStatus('No job ID provided', 'error');
+        } else {
+            loadReviewData();
+        }
+
+        async function loadReviewData() {
+            try {
+                const response = await fetch(`/review/${currentJobId}`);
+                if (!response.ok) throw new Error('Failed to load review data');
+
+                reviewData = await response.json();
+                renderReviewInterface();
+            } catch (error) {
+                showStatus(`Error loading review data: ${error.message}`, 'error');
+            }
+        }
+
+        function renderReviewInterface() {
+            // Update header
+            document.getElementById('job-info').textContent =
+                `Job #${reviewData.job_id} - ${reviewData.total_pages} pages - Status: ${reviewData.status}`;
+
+            if (!Array.isArray(reviewData.pages) || reviewData.pages.length === 0) {
+                reviewData.pages = [{
+                    page_num: 1,
+                    image_url: null,
+                    fields: reviewData.fields || []
+                }];
+                showStatus('No page image is available for this job. You can still review extracted fields.', 'error');
+            }
+
+            // Render page navigation
+            renderPageNavigation();
+
+            // Load first page
+            loadPage(0);
+        }
+
+        function renderPageNavigation() {
+            const nav = document.getElementById('page-navigation');
+            nav.innerHTML = '';
+
+            reviewData.pages.forEach((page, index) => {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${index === currentPage ? 'active' : ''}`;
+                btn.textContent = `Page ${page.page_num}`;
+                btn.onclick = () => loadPage(index);
+                nav.appendChild(btn);
+            });
+        }
+
+        function loadPage(pageIndex) {
+            currentPage = pageIndex;
+            const page = reviewData.pages[pageIndex];
+
+            if (!page) {
+                showStatus('No review page is available for this job.', 'error');
+                return;
+            }
+
+            // Update navigation
+            document.querySelectorAll('.page-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === pageIndex);
+            });
+
+            // Load image
+            const img = document.getElementById('document-image');
+            if (!page.image_url) {
+                img.removeAttribute('src');
+                img.style.display = 'none';
+                renderFieldOverlays(page);
+                renderFieldsList(page);
+                return;
+            }
+
+            img.style.display = 'block';
+            img.src = page.image_url;
+            img.onload = () => {
+                renderFieldOverlays(page);
+                renderFieldsList(page);
+            };
+            img.onerror = () => {
+                img.style.display = 'none';
+                showStatus('Page image could not be loaded. You can still review extracted fields.', 'error');
+                renderFieldOverlays(page);
+                renderFieldsList(page);
+            };
+        }
+
+        function renderFieldOverlays(page) {
+            // Clear existing overlays
+            fieldOverlays.forEach(overlay => overlay.remove());
+            fieldOverlays = [];
+
+            const img = document.getElementById('document-image');
+            if (!page.image_url || img.style.display === 'none') {
+                return;
+            }
+            const imgRect = img.getBoundingClientRect();
+
+            page.fields.forEach((field, index) => {
+                if (!field.bbox) return;
+
+                const overlay = document.createElement('div');
+                overlay.className = 'field-overlay';
+                overlay.dataset.fieldIndex = index;
+
+                // Convert bbox coordinates to screen coordinates
+                // Assuming bbox is [x1, y1, x2, y2] in pixels
+                const [x1, y1, x2, y2] = field.bbox;
+                const scaleX = imgRect.width / img.naturalWidth;
+                const scaleY = imgRect.height / img.naturalHeight;
+
+                overlay.style.left = `${imgRect.left + x1 * scaleX}px`;
+                overlay.style.top = `${imgRect.top + y1 * scaleY}px`;
+                overlay.style.width = `${(x2 - x1) * scaleX}px`;
+                overlay.style.height = `${(y2 - y1) * scaleY}px`;
+
+                overlay.onclick = () => selectField(index);
+                document.body.appendChild(overlay);
+                fieldOverlays.push(overlay);
+            });
+        }
+
+        function renderFieldsList(page) {
+            const list = document.getElementById('fields-list');
+            list.innerHTML = '';
+
+            page.fields.forEach((field, index) => {
+                const item = document.createElement('div');
+                item.className = 'field-item';
+                item.dataset.fieldIndex = index;
+                item.onclick = () => selectField(index);
+
+                const confidenceClass = getConfidenceClass(field.ai_confidence);
+                const confidenceText = field.ai_confidence ?
+                    `${(field.ai_confidence * 100).toFixed(1)}%` : 'N/A';
+
+                const displayValue = field.human_value !== null && field.human_value !== undefined ?
+                    field.human_value : (field.ai_value || 'No value extracted');
+
+                item.innerHTML = `
+                    <div class="field-label">${formatFieldName(field.field_key)}</div>
+                    <span class="field-confidence ${confidenceClass}">${confidenceText}</span>
+                    <div class="field-value">${displayValue}</div>
+                    ${field.evidence_text ? `<div class="evidence-text">"${field.evidence_text}"</div>` : ''}
+                    <div class="field-actions" id="actions-${index}">
+                        ${renderFieldActions(field, index)}
+                    </div>
+                `;
+
+                list.appendChild(item);
+            });
+        }
+
+        function renderFieldActions(field, index) {
+            if (field.human_reviewed) {
+                return `
+                    <span style="color: #10b981; font-weight: 500;">✓ Reviewed</span>
+                    <button class="btn btn-outline btn-sm" onclick="editField(${index})" style="margin-left: 8px;">Edit Again</button>
+                `;
+            }
+
+            return `
+                <button class="btn btn-success btn-sm" onclick="acceptField(${index})">Accept</button>
+                <button class="btn btn-outline btn-sm" onclick="editField(${index})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectField(${index})">Reject</button>
+            `;
+        }
+
+        function selectField(index) {
+            // Update field selection
+            document.querySelectorAll('.field-item').forEach((item, i) => {
+                item.classList.toggle('selected', i === index);
+            });
+
+            // Update overlay selection
+            fieldOverlays.forEach((overlay, i) => {
+                overlay.classList.toggle('selected', i === index);
+            });
+
+            // Scroll field into view
+            document.querySelectorAll('.field-item')[index]?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        function acceptField(index) {
+            const page = reviewData.pages[currentPage];
+            const field = page.fields[index];
+            field.human_action = 'accept';
+            field.human_value = field.ai_value;
+            field.human_reviewed = true;
+            renderFieldsList(page);
+        }
+
+        function editField(index) {
+            const page = reviewData.pages[currentPage];
+            const field = page.fields[index];
+
+            // Use human_value if already reviewed, otherwise use ai_value
+            const currentValue = field.human_value || field.ai_value || '';
+            const currentNote = field.human_note || '';
+
+            const actionsDiv = document.getElementById(`actions-${index}`);
+            actionsDiv.innerHTML = `
+                <input type="text" class="field-input" id="edit-input-${index}"
+                       value="${currentValue}" placeholder="Enter corrected value">
+                <textarea class="field-input" id="edit-note-${index}" rows="2" placeholder="Add a note (optional)">${currentNote}</textarea>
+                <button class="btn btn-success btn-sm" onclick="saveEdit(${index})">Save</button>
+                <button class="btn btn-outline btn-sm" onclick="cancelEdit(${index})">Cancel</button>
+            `;
+        }
+
+        function saveEdit(index) {
+            const input = document.getElementById(`edit-input-${index}`);
+            const noteInput = document.getElementById(`edit-note-${index}`);
+            const page = reviewData.pages[currentPage];
+            const field = page.fields[index];
+
+            field.human_action = 'edit';
+            field.human_value = input.value.trim();
+            field.human_note = noteInput.value.trim();
+            field.human_reviewed = true;
+            renderFieldsList(page);
+        }
+
+        function cancelEdit(index) {
+            const page = reviewData.pages[currentPage];
+            renderFieldsList(page);
+        }
+
+        function rejectField(index) {
+            const page = reviewData.pages[currentPage];
+            const field = page.fields[index];
+            field.human_action = 'reject';
+            field.human_value = null;
+            field.human_reviewed = true;
+            renderFieldsList(page);
+        }
+
+        async function submitReview() {
+            const submitBtn = document.getElementById('submit-review');
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = '<span class="loading"></span> Submitting...';
+            submitBtn.disabled = true;
+
+            try {
+                // Collect all corrections
+                const corrections = [];
+                reviewData.pages.forEach(page => {
+                    page.fields.forEach(field => {
+                        if (field.human_reviewed) {
+                            corrections.push({
+                                field_key: field.field_key,
+                                human_value: field.human_value,
+                                action: field.human_action,
+                                page_number: page.page_num,
+                                bbox: field.bbox,
+                                human_note: field.human_note || ''
+                            });
+                        }
+                    });
+                });
+
+                const response = await fetch(`/review/${currentJobId}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        corrections: corrections,
+                        reviewer_id: 'web_reviewer'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to submit review');
+
+                const result = await response.json();
+                showStatus(`Review submitted successfully! ${result.corrections_applied} corrections applied.`, 'success');
+
+                // Change button text to indicate success but keep it enabled for re-submission
+                submitBtn.textContent = 'Review Submitted ✓';
+                submitBtn.disabled = false;
+
+                // Add a small delay before changing back to allow re-submission
+                setTimeout(() => {
+                    submitBtn.textContent = 'Submit Review Again';
+                }, 2000);
+
+            } catch (error) {
+                showStatus(`Error submitting review: ${error.message}`, 'error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        function getConfidenceClass(confidence) {
+            if (!confidence) return 'confidence-low';
+            if (confidence >= 0.8) return 'confidence-high';
+            if (confidence >= 0.6) return 'confidence-medium';
+            return 'confidence-low';
+        }
+
+        function formatFieldName(fieldKey) {
+            return fieldKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Event listeners
+        document.getElementById('submit-review').addEventListener('click', submitReview);
+    </script>
+</body>
+</html>

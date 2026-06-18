@@ -1,0 +1,38 @@
+# Virtual Environment
+.venv312/
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Storage and outputs
+
+output/
+output2/
+runs/
+
+# Model files (too large)
+*.pt
+yolo11n-seg.pt
+yolo11n.pt
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+test_predictions*.csv

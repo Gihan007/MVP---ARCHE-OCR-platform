@@ -1,0 +1,35 @@
+to check all th edatabase available ,
+
+SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+
+to convert into Horizontal
+
+CREATE OR REPLACE VIEW extracted_fields_horizontal AS
+SELECT
+    fj.id as job_id,
+    fj.tenant_id,
+    fj.status,
+    fj.created_at,
+    fj.finalized_at,
+    fj.review_needed,
+    fj.has_human_modifications,
+    fj.modified_fields,
+    MAX(CASE WHEN fef.field_key = 'insurance_company_name' THEN fef.value END) as insurance_company_name,
+    MAX(CASE WHEN fef.field_key = 'insurance_member_number' THEN fef.value END) as insurance_member_number,
+    MAX(CASE WHEN fef.field_key = 'insurance_member_name' THEN fef.value END) as insurance_member_name,
+    MAX(CASE WHEN fef.field_key = 'approval_status' THEN fef.value END) as approval_status,
+    MAX(CASE WHEN fef.field_key = 'approval_number' THEN fef.value END) as approval_number,
+    MAX(CASE WHEN fef.field_key = 'approved_service_cpt' THEN fef.value END) as approved_service_cpt,
+    MAX(CASE WHEN fef.field_key = 'approved_units' THEN fef.value END) as approved_units,
+    MAX(CASE WHEN fef.field_key = 'service_start_date' THEN fef.value END) as service_start_date,
+    MAX(CASE WHEN fef.field_key = 'service_end_date' THEN fef.value END) as service_end_date,
+    MAX(CASE WHEN fef.field_key = 'insurance_rep_name' THEN fef.value END) as insurance_rep_name,
+    MAX(CASE WHEN fef.field_key = 'insurance_rep_contact' THEN fef.value END) as insurance_rep_contact,
+    MAX(CASE WHEN fef.field_key = 'fax_received_date' THEN fef.value END) as fax_received_date
+FROM fax_jobs fj
+LEFT JOIN fax_extracted_fields fef ON fj.id = fef.fax_job_id
+GROUP BY fj.id, fj.tenant_id, fj.status, fj.created_at, fj.finalized_at, fj.review_needed, fj.has_human_modifications, fj.modified_fields;
+
+
+
+cd "c:\Users\user\Desktop\New folder\OCR-ArcheAI"; python -c "from shared.models.fax_job import FaxJob; print('Import successful')"

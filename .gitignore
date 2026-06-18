@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+ocr
+steps.txt
+
+# Node/frontend build artifacts
+node_modules/
+services/frontend/node_modules/
+services/frontend/dist/
+dist/
+
+# Environment variables
+.env
+
+
+# Database
+*.db
+*.sqlite
+postgres_data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Storage/Cache
+storage/
+fax_ingress/storage/
+fax_processing/storage/
+*.tmp

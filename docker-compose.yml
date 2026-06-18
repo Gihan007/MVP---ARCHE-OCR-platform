@@ -1,0 +1,82 @@
+services:
+  db:
+    build:
+      context: ./services/postgres
+    environment:
+      POSTGRES_DB: fax_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/postgres/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U postgres -d fax_db -c 'SELECT 1' > /dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  postgres-schema:
+    image: postgres:15
+    environment:
+      PGPASSWORD: postgres
+    command: >
+      sh -c "psql -h db -U postgres -d fax_db -v ON_ERROR_STOP=1 -f /schema/schema.sql"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./services/postgres/schema.sql:/schema/schema.sql:ro
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: services/backend/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/fax_db
+      DOCKER_ENV: "true"
+      FLAGS_use_mkldnn: "0"
+      FLAGS_use_cudnn: "0"
+      FLAGS_enable_pir_api: "0"
+      FLAGS_enable_pir_in_executor: "0"
+      FLAGS_use_onednn: "0"
+      FLAGS_use_legacy_executor: "1"
+      CUDA_VISIBLE_DEVICES: "-1"
+      CPU_NUM: "1"
+      PYTHONUNBUFFERED: "1"
+      PADDLE_INFER_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    depends_on:
+      postgres-schema:
+        condition: service_completed_successfully
+    volumes:
+      - ./storage:/app/storage
+
+  frontend:
+    build:
+      context: .
+      dockerfile: services/frontend/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - db
+    profiles: ["tools"]
+
+volumes:
+  postgres_data:
